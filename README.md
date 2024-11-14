@@ -10,8 +10,9 @@ This project analyzes restaurant reviews using NLP and displays the results with
     ```
 2. Download the dataset from [Kaggle](https://www.kaggle.com/datasets/denizbilginn/google-maps-restaurant-reviews).
 
+3. pip install -r requirements.txt
 
-3. Create a directory named `data` in the root of your project and place the downloaded CSV file and images into this directory.
+4. Create a directory named `data` in the root of your project and place the downloaded CSV file and images into this directory.
 
     ```
     your-project/
@@ -24,7 +25,7 @@ This project analyzes restaurant reviews using NLP and displays the results with
         └── dataset/
     ```
 
-4. Run the application:
+5. Run the application:
     ```bash
     streamlit run app.py
     ```
