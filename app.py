@@ -5,42 +5,79 @@ from wordcloud import WordCloud
 from transformers import pipeline
 from PIL import Image
 import os
+import multidict as multidict
+import re
+from sklearn.feature_extraction.text import TfidfVectorizer
 
+# 加載數據
 data = pd.read_csv(r'reviews.csv')
-business_names = list(data['business_name'].unique())
+business_names = list(sorted(data['business_name'].unique()))
 image_dir = "dataset"
 photo_cat = ['indoor atmosphere', 'outdoor atmosphere', 'taste', 'menu']
 images_per_row = 3
 
-def summarize(data, business_name):
-    all_comment = data[data['business_name'] == business_name]['text'].values
-    combined_text = " ".join(all_comment)
-    summarizes = pipeline("summarization", model="facebook/bart-large-cnn")  # model
-    summarizes_list = summarizes(combined_text, max_length=len(combined_text) * 0.8, min_length=30, do_sample=False)
-    return summarizes_list[0]['summary_text']
+# 初始化模型
+summarize_pipeline = pipeline("summarization", model="facebook/bart-large-cnn")
 
-# Plot bar chart and word cloud
+# 摘要函數
+def summarize(data, business_name):
+    all_comment = data[data['business_name'] == business_name]['text'].dropna().values
+    combined_text = " ".join(all_comment)
+    try:
+        summary_list = summarize_pipeline(
+            combined_text, max_length=min(len(combined_text.split()) * 0.8, 512), 
+            min_length=30, do_sample=False
+        )
+        return summary_list[0]['summary_text']
+    except Exception as e:
+        return "Unable to summarize the text due to length or data issues."
+
+# 詞頻字典生成
+def getFrequencyDictForText(sentence):
+    STOPWORDS = set([
+        "you", "I", "he", "she", "it", "we", "they", "and", "or", "but", "the", "a", "an", "of", "for",
+        "to", "in", "on", "with", "at", "is", "was", "are", "were", "be", "been", "by", "that", "this",
+        "those", "these", "not", "as", "from", "they", "us", "our", "me", "my", "your", "their", "its",
+        "will", "would", "can", "could", "should", "about"
+    ])
+    fullTermsDict = multidict.MultiDict()
+    tmpDict = {}
+    cleaned_text = re.sub(r"[^\w\s]", "", sentence).lower()
+
+    for word in cleaned_text.split():
+        if word in STOPWORDS or len(word) <= 1:
+            continue
+        val = tmpDict.get(word, 0)
+        tmpDict[word] = val + 1
+
+    for key in tmpDict:
+        fullTermsDict.add(key, tmpDict[key])
+
+    return fullTermsDict
+def generate_wordcloud(text):
+        if text.strip():
+            wc = WordCloud(width=500, height=300, background_color="rgba(255, 255, 255, 0)", mode="RGBA")
+            return wc.generate(text).to_image()
+        return None
+
+def extract_keywords(rating_filter, business_name):
+    filtered_text = " ".join(data[(data['business_name'] == business_name) & rating_filter]['text'].dropna())
+    return filtered_text
+
+# 繪圖函數
 def plot_keywords(business_name):
-    # Bar chart for ratings
     counts = data[data['business_name'] == business_name]['rating'].value_counts().sort_index()
     bar_fig = go.Figure([go.Bar(x=counts.index, y=counts.values, marker_color='indianred')])
     bar_fig.update_layout(title_text='Rating Bar Graph', xaxis_title='Rating', yaxis_title='Count')
 
-    # High rating Word Cloud
-    high_data = data[(data['business_name'] == business_name) & (data['rating'] > 3)]
-    high_comment = " ".join(high_data['text'].values)
-    high_wc = WordCloud(width=500, height=300, background_color="rgba(255, 255, 255, 0)", mode="RGBA").generate(high_comment)
-    high_wc_img = high_wc.to_image()
-
-    # Low rating Word Cloud
-    low_data = data[(data['business_name'] == business_name) & (data['rating'] < 3)]
-    low_comment = " ".join(low_data['text'].values)
-    low_wc = WordCloud(width=500, height=300, background_color="rgba(255, 255, 255, 0)", mode="RGBA").generate(low_comment)
-    low_wc_img = low_wc.to_image()
+    
+    high_wc_img = generate_wordcloud(extract_keywords(data['rating'] > 3, business_name))
+    low_wc_img = generate_wordcloud(extract_keywords(data['rating'] < 3, business_name))
 
     return bar_fig, high_wc_img, low_wc_img
 
-def display_img(business_name, selected_category):
+# 圖片顯示函數
+def display_images(business_name, selected_category):
     # Display selected images
     if 'selected_category' in locals():
         st.subheader(selected_category.capitalize())
@@ -58,8 +95,7 @@ def display_img(business_name, selected_category):
 
 # Streamlit UI
 st.title('Restaurant Review Analysis')
-option = st.selectbox("Which restaurant do you want to analyze?", business_names, 
-                    index=None, placeholder="Select restaurant")
+option = st.selectbox("Which restaurant do you want to analyze?", business_names, index=None, placeholder="Select restaurant")
 
 # Picture Gallery
 col1, col2, col3, col4 = st.columns(4)
@@ -79,7 +115,7 @@ with col4:
 if option and 'selected_category' in locals():
     with st.spinner('Please wait...'):
         summary = summarize(data, option)
-        st.header(f'Comment of {option}')
+        st.header(f'Summarize Comment of {option}')
         st.write(summary)
 
         bar_fig, high_wc_img, low_wc_img = plot_keywords(option)
@@ -89,10 +125,10 @@ if option and 'selected_category' in locals():
         with col1:
             st.plotly_chart(bar_fig)
         with col2:
-            st.image(low_wc_img, caption="Low Rating Word Cloud", use_column_width=True)
-            st.image(high_wc_img, caption="High Rating Word Cloud", use_column_width=True)
+            st.image(low_wc_img, caption="Low Rate Word Cloud", use_column_width=True)
+            st.image(high_wc_img, caption="High Rate Sentiment Word Cloud", use_column_width=True)
 
         st.header("Picture Gallery")
-        display_img(option, selected_category)
+        display_images(option, selected_category)
 
         st.success('Done!')
