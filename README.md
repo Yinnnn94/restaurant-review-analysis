@@ -33,6 +33,10 @@ This project analyzes restaurant reviews using NLP and displays the results with
     streamlit run app.py
     ```
 
+7. UI display
+
+    
+
 ## Usage
 
 Select a restaurant from the dropdown to view a summary of its reviews and a gallery of related images.
