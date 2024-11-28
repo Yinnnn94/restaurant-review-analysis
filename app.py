@@ -7,7 +7,7 @@ from PIL import Image
 import os
 import multidict as multidict
 import re
-from sklearn.feature_extraction.text import TfidfVectorizer
+# from sklearn.feature_extraction.text import TfidfVectorizer
 
 # 加載數據
 data = pd.read_csv(r'reviews.csv')
@@ -17,7 +17,8 @@ photo_cat = ['indoor atmosphere', 'outdoor atmosphere', 'taste', 'menu']
 images_per_row = 3
 
 # 初始化模型
-summarize_pipeline = pipeline("summarization", model="facebook/bart-large-cnn")
+# summarize_pipeline = pipeline("summarization", model="facebook/bart-large-cnn")
+summarize_pipeline = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 
 # 摘要函數
 def summarize(data, business_name):
@@ -91,7 +92,7 @@ def display_images(business_name, selected_category):
                     if i + j < num_images:
                         img_path = os.path.join(image_dir, filtered_images[i + j])
                         img = Image.open(img_path)
-                        col.image(img, use_column_width=True)
+                        col.image(img, use_container_width = True)
 
 # Streamlit UI
 st.title('Restaurant Review Analysis')
@@ -125,8 +126,8 @@ if option and 'selected_category' in locals():
         with col1:
             st.plotly_chart(bar_fig)
         with col2:
-            st.image(low_wc_img, caption="Low Rate Word Cloud", use_column_width=True)
-            st.image(high_wc_img, caption="High Rate Sentiment Word Cloud", use_column_width=True)
+            st.image(low_wc_img, caption="Low Rate Word Cloud", use_container_width=True)
+            st.image(high_wc_img, caption="High Rate Sentiment Word Cloud", use_container_width=True)
 
         st.header("Picture Gallery")
         display_images(option, selected_category)
