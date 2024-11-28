@@ -33,9 +33,14 @@ This project analyzes restaurant reviews using NLP and displays the results with
     streamlit run app.py
     ```
 
-7. UI display
+7. UI display:
+<div style="display: flex; justify-content: space-between;">
+    <img src="https://github.com/Yinnnn94/restaurant-review-analysis/blob/main/UI%20display/UI%20display1.png" width="45%" alt="UI display 1">
+    <img src="https://github.com/Yinnnn94/restaurant-review-analysis/blob/main/UI%20display/UI%20display2.png" width="45%" alt="UI display 2">
+</div>
 
-    
+- The picture on the right shows the restaurant summary review along with the high-rate and low-rate Wordcloud.
+- The picture on the left displays the selected image.
 
 ## Usage
 
